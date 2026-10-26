@@ -34,11 +34,16 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
 
   const refresh = useCallback(async () => {
     try {
-      const [n, m] = await Promise.all([listNotes(group.id), listMembers(group.id)]);
+      const n = await listNotes(group.id);
       setNotes(n);
-      setMembers(m);
     } catch (e) {
       setNotes([]);
+    }
+    try {
+      const m = await listMembers(group.id);
+      setMembers(m);
+    } catch (e) {
+      setMembers([]);
     }
   }, [group.id]);
 

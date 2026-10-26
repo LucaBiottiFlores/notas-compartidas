@@ -120,13 +120,30 @@ export async function joinGroup(code) {
 }
 
 export async function listMembers(groupId) {
-  const { data, error } = await supabase
+  const { data: memberships, error } = await supabase
     .from('group_members')
-    .select('id, role, user_id, profiles(id, display_name, email)')
+    .select('id, role, user_id')
     .eq('group_id', groupId)
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data || [];
+  const rows = memberships || [];
+  const ids = rows.map((m) => m.user_id);
+  const profileMap = {};
+  if (ids.length) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', ids);
+    (profiles || []).forEach((p) => {
+      profileMap[p.id] = p;
+    });
+  }
+  return rows.map((m) => ({
+    id: m.id,
+    role: m.role,
+    user_id: m.user_id,
+    profiles: profileMap[m.user_id] || null,
+  }));
 }
 
 export async function leaveGroup(groupId) {
