@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { listGroups, createGroup, joinGroup, getProfile } from '../supabase';
 import { colors } from '../theme';
 import { Button, Card, EmptyState, Field, Header, Sheet, Spinner, Badge } from '../ui';
@@ -11,6 +11,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -29,6 +30,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
   async function handleCreate() {
     if (!name.trim()) return;
     setBusy(true);
+    setError(null);
     try {
       const g = await createGroup(name);
       setName('');
@@ -36,7 +38,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
       await refresh();
       onOpenGroup(g);
     } catch (e) {
-      Alert.alert('No se pudo crear', e.message || 'Inténtalo de nuevo.');
+      setError(e.message || 'No se pudo crear. Inténtalo de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -45,6 +47,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
   async function handleJoin() {
     if (!code.trim()) return;
     setBusy(true);
+    setError(null);
     try {
       const g = await joinGroup(code);
       setCode('');
@@ -52,7 +55,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
       await refresh();
       onOpenGroup(g);
     } catch (e) {
-      Alert.alert('No se pudo unir', e.message || 'Revisa el código.');
+      setError(e.message || 'Revisa el código.');
     } finally {
       setBusy(false);
     }
@@ -119,6 +122,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
           placeholder="Ej: Casa, Trabajo, Viaje…"
           autoFocus
         />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title={busy ? 'Creando…' : 'Crear grupo'} onPress={handleCreate} disabled={busy || !name.trim()} />
       </Sheet>
 
@@ -136,6 +140,7 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
           autoCapitalize="characters"
           autoFocus
         />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title={busy ? 'Uniéndote…' : 'Unirme'} onPress={handleJoin} disabled={busy || !code.trim()} />
       </Sheet>
     </View>
@@ -152,4 +157,5 @@ const styles = StyleSheet.create({
   groupMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   chevron: { fontSize: 26, color: colors.muted, marginLeft: 4 },
   help: { fontSize: 14, color: colors.muted, marginBottom: 14, lineHeight: 20 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
 });
