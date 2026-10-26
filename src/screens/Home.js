@@ -1,0 +1,155 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { listGroups, createGroup, joinGroup, getProfile } from '../supabase';
+import { colors } from '../theme';
+import { Button, Card, EmptyState, Field, Header, Sheet, Spinner, Badge } from '../ui';
+
+export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
+  const [groups, setGroups] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [sheet, setSheet] = useState(null); // 'create' | 'join' | null
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const [g, p] = await Promise.all([listGroups(), getProfile()]);
+      setGroups(g);
+      setProfile(p);
+    } catch (e) {
+      setGroups([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  async function handleCreate() {
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      const g = await createGroup(name);
+      setName('');
+      setSheet(null);
+      await refresh();
+      onOpenGroup(g);
+    } catch (e) {
+      Alert.alert('No se pudo crear', e.message || 'Inténtalo de nuevo.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleJoin() {
+    if (!code.trim()) return;
+    setBusy(true);
+    try {
+      const g = await joinGroup(code);
+      setCode('');
+      setSheet(null);
+      await refresh();
+      onOpenGroup(g);
+    } catch (e) {
+      Alert.alert('No se pudo unir', e.message || 'Revisa el código.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const email = (session && session.user && session.user.email) || '';
+  const display = (profile && profile.display_name) || email.split('@')[0] || '';
+
+  return (
+    <View style={styles.root}>
+      <Header
+        title="Mis grupos"
+        subtitle={email || ''}
+        right={
+          <Button title="Salir" variant="ghost" small onPress={onSignOut} />
+        }
+      />
+
+      <View style={styles.actions}>
+        <Button title="+ Crear grupo" onPress={() => setSheet('create')} style={styles.actionBtn} />
+        <Button title="Unirse con código" variant="ghost" onPress={() => setSheet('join')} style={styles.actionBtn} />
+      </View>
+
+      {groups === null ? (
+        <Spinner label="Cargando tus grupos…" />
+      ) : groups.length === 0 ? (
+        <EmptyState
+          emoji="📝"
+          title="Aún no tienes grupos"
+          subtitle="Crea uno e invita a alguien con el código, o únete con un código que te hayan compartido."
+        />
+      ) : (
+        <View>
+          <Text style={styles.sectionTitle}>
+            Hola{display ? ', ' + display : ''} · {groups.length} {groups.length === 1 ? 'grupo' : 'grupos'}
+          </Text>
+          {groups.map(({ group, memberCount }) => (
+            <Card
+              key={group.id}
+              onPress={() => onOpenGroup(group)}
+              right={<Text style={styles.chevron}>›</Text>}
+            >
+              <View style={styles.groupRow}>
+                <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
+                <View style={styles.groupMeta}>
+                  <Badge tone="accent">{memberCount} {memberCount === 1 ? 'miembro' : 'miembros'}</Badge>
+                  <Badge>Código {group.invite_code}</Badge>
+                </View>
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
+
+      <Sheet
+        visible={sheet === 'create'}
+        onClose={() => setSheet(null)}
+        title="Nuevo grupo"
+      >
+        <Field
+          label="Nombre del grupo"
+          value={name}
+          onChangeText={setName}
+          placeholder="Ej: Casa, Trabajo, Viaje…"
+          autoFocus
+        />
+        <Button title={busy ? 'Creando…' : 'Crear grupo'} onPress={handleCreate} disabled={busy || !name.trim()} />
+      </Sheet>
+
+      <Sheet
+        visible={sheet === 'join'}
+        onClose={() => setSheet(null)}
+        title="Unirse a un grupo"
+      >
+        <Text style={styles.help}>Pídele el código a quien creó el grupo.</Text>
+        <Field
+          label="Código de invitación"
+          value={code}
+          onChangeText={(t) => setCode(t.toUpperCase())}
+          placeholder="ABC12345"
+          autoCapitalize="characters"
+          autoFocus
+        />
+        <Button title={busy ? 'Uniéndote…' : 'Unirme'} onPress={handleJoin} disabled={busy || !code.trim()} />
+      </Sheet>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bg },
+  actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+  actionBtn: { flex: 1 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 8 },
+  groupRow: { gap: 6 },
+  groupName: { fontSize: 17, fontWeight: '800', color: colors.ink },
+  groupMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  chevron: { fontSize: 26, color: colors.muted, marginLeft: 4 },
+  help: { fontSize: 14, color: colors.muted, marginBottom: 14, lineHeight: 20 },
+});
