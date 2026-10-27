@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, SafeAreaView, StyleSheet, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { getSession, onAuthChange, signOut } from './src/supabase';
-import { colors } from './src/theme';
+import { ThemeProvider, useTheme } from './src/theme';
 import { Spinner } from './src/ui';
 import AuthScreen from './src/screens/Auth';
 import HomeScreen from './src/screens/Home';
@@ -10,7 +10,8 @@ import GroupScreen from './src/screens/Group';
 import NoteEditorScreen from './src/screens/NoteEditor';
 import TrashScreen from './src/screens/Trash';
 
-export default function App() {
+function AppShell() {
+  const { theme } = useTheme();
   const [session, setSession] = useState(null);
   const [booting, setBooting] = useState(true);
   const [route, setRoute] = useState({ name: 'home' });
@@ -36,10 +37,12 @@ export default function App() {
     await signOut();
   }
 
+  const styles = makeStyles(theme);
+
   if (booting) {
     return (
       <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+        <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
         <View style={styles.splash}>
           <Spinner label="Cargando…" />
         </View>
@@ -50,7 +53,7 @@ export default function App() {
   if (!session) {
     return (
       <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+        <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
         <AuthScreen />
       </SafeAreaView>
     );
@@ -58,7 +61,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar style="dark" />
+      <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
       {route.name === 'home' ? (
         <HomeScreen
           session={session}
@@ -90,7 +93,16 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  splash: { flex: 1, justifyContent: 'center' },
-});
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
+  );
+}
+
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    splash: { flex: 1, justifyContent: 'center' },
+  });

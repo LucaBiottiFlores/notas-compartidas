@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import {
   createNote,
@@ -8,7 +8,7 @@ import {
   listVersions,
   currentUserId,
 } from '../supabase';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { Button, Field, Header, Sheet } from '../ui';
 import RichTextEditor from '../RichTextEditor';
 import { htmlToText } from '../utils';
@@ -20,6 +20,8 @@ function fmt(iso) {
 }
 
 export default function NoteEditorScreen({ group, note, onBack, onSaved }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [title, setTitle] = useState(note ? note.title || '' : '');
   const [body, setBody] = useState(note ? note.body || '' : '');
   const [noteId, setNoteId] = useState(note ? note.id : null);
@@ -211,20 +213,21 @@ export default function NoteEditorScreen({ group, note, onBack, onSaved }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  body: { flex: 1, paddingHorizontal: 20 },
-  topActions: { flexDirection: 'row', gap: 6 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  statusText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
-  bottomRow: { flexDirection: 'column', gap: 10, marginTop: 8 },
-  confirmText: { fontSize: 15, color: colors.muted, lineHeight: 22, marginBottom: 18 },
-  confirmRow: { flexDirection: 'row', gap: 10 },
-  confirmBtn: { flex: 1 },
-  versionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
-  versionTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  versionBody: { fontSize: 14, color: colors.muted, marginTop: 2, lineHeight: 19 },
-  versionTime: { fontSize: 12, color: colors.muted, marginTop: 6 },
-  editorWrap: { marginBottom: 14 },
-  editorLabel: { fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 6 },
-});
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    body: { flex: 1, paddingHorizontal: 20 },
+    topActions: { flexDirection: 'row', gap: 6 },
+    statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+    statusText: { fontSize: 13, color: t.muted, fontWeight: '600' },
+    bottomRow: { flexDirection: 'column', gap: 10, marginTop: 8 },
+    confirmText: { fontSize: 15, color: t.muted, lineHeight: 22, marginBottom: 18 },
+    confirmRow: { flexDirection: 'row', gap: 10 },
+    confirmBtn: { flex: 1 },
+    versionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line },
+    versionTitle: { fontSize: 15, fontWeight: '700', color: t.ink },
+    versionBody: { fontSize: 14, color: t.muted, marginTop: 2, lineHeight: 19 },
+    versionTime: { fontSize: 12, color: t.muted, marginTop: 6 },
+    editorWrap: { marginBottom: 14 },
+    editorLabel: { fontSize: 13, fontWeight: '700', color: t.muted, marginBottom: 6 },
+  });

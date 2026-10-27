@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { listNotes, listMembers, subscribeToGroupNotes } from '../supabase';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { Button, Card, EmptyState, Header, Sheet, Spinner, Badge } from '../ui';
 import { htmlToText } from '../utils';
 
@@ -28,6 +28,8 @@ function snippet(body, n = 90) {
 }
 
 export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, onEditedName }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [notes, setNotes] = useState(null);
   const [members, setMembers] = useState([]);
   const [showMembers, setShowMembers] = useState(false);
@@ -144,22 +146,23 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  actionBtn: { flex: 1 },
-  noteTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  noteTitle: { fontSize: 16, fontWeight: '800', color: colors.ink, flexShrink: 1 },
-  noteSnippet: { fontSize: 14, color: colors.muted, lineHeight: 20 },
-  noteTime: { fontSize: 12, color: colors.muted, marginTop: 6 },
-  chevron: { fontSize: 26, color: colors.muted, marginLeft: 4 },
-  memberList: { marginBottom: 16 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 17, fontWeight: '800', color: colors.accent },
-  memberInfo: { flex: 1, minWidth: 0 },
-  memberName: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  memberEmail: { fontSize: 13, color: colors.muted },
-  toast: { position: 'absolute', left: 24, right: 24, bottom: 28, backgroundColor: colors.ink, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center' },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-});
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+    actionBtn: { flex: 1 },
+    noteTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    noteTitle: { fontSize: 16, fontWeight: '800', color: t.ink, flexShrink: 1 },
+    noteSnippet: { fontSize: 14, color: t.muted, lineHeight: 20 },
+    noteTime: { fontSize: 12, color: t.muted, marginTop: 6 },
+    chevron: { fontSize: 26, color: t.muted, marginLeft: 4 },
+    memberList: { marginBottom: 16 },
+    memberRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: t.line },
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' },
+    avatarText: { fontSize: 17, fontWeight: '800', color: t.accent },
+    memberInfo: { flex: 1, minWidth: 0 },
+    memberName: { fontSize: 15, fontWeight: '700', color: t.ink },
+    memberEmail: { fontSize: 13, color: t.muted },
+    toast: { position: 'absolute', left: 24, right: 24, bottom: 28, backgroundColor: t.ink, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center' },
+    toastText: { color: t.bg, fontSize: 14, fontWeight: '600' },
+  });

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { listNotes, restoreNote, hardDeleteNote } from '../supabase';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { Button, Card, EmptyState, Header, Sheet, Spinner } from '../ui';
 
 function fmt(iso) {
@@ -11,6 +11,8 @@ function fmt(iso) {
 }
 
 export default function TrashScreen({ group, onBack, onRestored }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [notes, setNotes] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
 
@@ -86,14 +88,15 @@ export default function TrashScreen({ group, onBack, onRestored }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  hint: { fontSize: 13, color: colors.muted, marginBottom: 10 },
-  note: { gap: 3 },
-  noteTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  noteTime: { fontSize: 12, color: colors.muted },
-  actionsCol: { gap: 8, alignItems: 'flex-end' },
-  confirmText: { fontSize: 15, color: colors.muted, lineHeight: 22, marginBottom: 18 },
-  confirmRow: { flexDirection: 'row', gap: 10 },
-  confirmBtn: { flex: 1 },
-});
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    hint: { fontSize: 13, color: t.muted, marginBottom: 10 },
+    note: { gap: 3 },
+    noteTitle: { fontSize: 16, fontWeight: '700', color: t.ink },
+    noteTime: { fontSize: 12, color: t.muted },
+    actionsCol: { gap: 8, alignItems: 'flex-end' },
+    confirmText: { fontSize: 15, color: t.muted, lineHeight: 22, marginBottom: 18 },
+    confirmRow: { flexDirection: 'row', gap: 10 },
+    confirmBtn: { flex: 1 },
+  });

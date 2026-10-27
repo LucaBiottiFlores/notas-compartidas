@@ -1,13 +1,17 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { listGroups, createGroup, joinGroup, getProfile } from '../supabase';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { Button, Card, EmptyState, Field, Header, Sheet, Spinner, Badge } from '../ui';
+import ThemePicker from '../ThemePicker';
 
 export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [groups, setGroups] = useState(null);
   const [profile, setProfile] = useState(null);
   const [sheet, setSheet] = useState(null); // 'create' | 'join' | null
+  const [themeOpen, setThemeOpen] = useState(false);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -70,7 +74,10 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
         title="Mis grupos"
         subtitle={email || ''}
         right={
-          <Button title="Salir" variant="ghost" small onPress={onSignOut} />
+          <View style={styles.headerBtns}>
+            <Button title="Tema" variant="ghost" small onPress={() => setThemeOpen(true)} />
+            <Button title="Salir" variant="ghost" small onPress={onSignOut} />
+          </View>
         }
       />
 
@@ -143,19 +150,23 @@ export default function HomeScreen({ onOpenGroup, onSignOut, session }) {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title={busy ? 'Uniéndote…' : 'Unirme'} onPress={handleJoin} disabled={busy || !code.trim()} />
       </Sheet>
+
+      <ThemePicker visible={themeOpen} onClose={() => setThemeOpen(false)} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  actionBtn: { flex: 1 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 8 },
-  groupRow: { gap: 6 },
-  groupName: { fontSize: 17, fontWeight: '800', color: colors.ink },
-  groupMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  chevron: { fontSize: 26, color: colors.muted, marginLeft: 4 },
-  help: { fontSize: 14, color: colors.muted, marginBottom: 14, lineHeight: 20 },
-  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
-});
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    headerBtns: { flexDirection: 'row', gap: 6 },
+    actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+    actionBtn: { flex: 1 },
+    sectionTitle: { fontSize: 13, fontWeight: '700', color: t.muted, marginBottom: 8 },
+    groupRow: { gap: 6 },
+    groupName: { fontSize: 17, fontWeight: '800', color: t.ink },
+    groupMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+    chevron: { fontSize: 26, color: t.muted, marginLeft: 4 },
+    help: { fontSize: 14, color: t.muted, marginBottom: 14, lineHeight: 20 },
+    error: { color: t.danger, fontSize: 14, marginBottom: 12 },
+  });

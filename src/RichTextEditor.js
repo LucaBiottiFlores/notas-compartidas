@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useReducer } from 'react';
+import React, { useEffect, useRef, useReducer, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { TextStyle, Color, FontSize } from '@tiptap/extension-text-style';
 import { Highlight } from '@tiptap/extension-highlight';
 import { Placeholder } from '@tiptap/extension-placeholder';
-import { colors } from './theme';
+import { useTheme } from './theme';
 
 const EXTENSIONS = [
   StarterKit,
@@ -25,11 +25,14 @@ const FONT_SIZES = [
   { label: 'A++', size: '1.5em' },
 ];
 
-function ensureCss() {
+function applyCss(t) {
   if (typeof document === 'undefined') return;
-  if (document.getElementById('tiptap-css')) return;
-  const style = document.createElement('style');
-  style.id = 'tiptap-css';
+  let style = document.getElementById('tiptap-css');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'tiptap-css';
+    document.head.appendChild(style);
+  }
   style.textContent = `
     .tiptap.ProseMirror {
       min-height: 220px;
@@ -37,7 +40,7 @@ function ensureCss() {
       outline: none;
       font-size: 16px;
       line-height: 1.55;
-      color: ${colors.ink};
+      color: ${t.ink};
     }
     .tiptap.ProseMirror p { margin: 0 0 0.6em; }
     .tiptap.ProseMirror h1 { font-size: 1.6em; font-weight: 800; margin: 0.6em 0 0.35em; }
@@ -47,39 +50,38 @@ function ensureCss() {
     .tiptap.ProseMirror ul { list-style: disc; }
     .tiptap.ProseMirror ol { list-style: decimal; }
     .tiptap.ProseMirror blockquote {
-      border-left: 3px solid ${colors.line};
+      border-left: 3px solid ${t.line};
       margin: 0.6em 0;
       padding-left: 0.9em;
-      color: ${colors.muted};
+      color: ${t.muted};
     }
     .tiptap.ProseMirror code {
-      background: ${colors.bg};
+      background: ${t.surface2};
       border-radius: 5px;
       padding: 0.15em 0.4em;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.9em;
     }
     .tiptap.ProseMirror pre {
-      background: #F0EFEA;
+      background: ${t.surface2};
       border-radius: 10px;
       padding: 12px 14px;
       overflow-x: auto;
       margin: 0.6em 0;
     }
     .tiptap.ProseMirror pre code { background: transparent; padding: 0; }
-    .tiptap.ProseMirror a { color: ${colors.accent}; }
+    .tiptap.ProseMirror a { color: ${t.accent}; }
     .tiptap.ProseMirror p.is-editor-empty:first-child::before {
       content: attr(data-placeholder);
-      color: ${colors.muted};
+      color: ${t.muted};
       float: left;
       height: 0;
       pointer-events: none;
     }
   `;
-  document.head.appendChild(style);
 }
 
-function TB({ label, active, onPress, children, wide }) {
+function TB({ label, active, onPress, children, wide, styles }) {
   return (
     <Pressable
       onPress={onPress}
@@ -90,7 +92,7 @@ function TB({ label, active, onPress, children, wide }) {
   );
 }
 
-function Swatch({ color, active, onPress, isText }) {
+function Swatch({ color, active, onPress, isText, styles }) {
   return (
     <Pressable
       onPress={onPress}
@@ -107,6 +109,8 @@ function Swatch({ color, active, onPress, isText }) {
 }
 
 export default function RichTextEditor({ initialHtml, onChange }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const contentRef = useRef(initialHtml || '');
   const onChangeRef = useRef(onChange);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -116,8 +120,8 @@ export default function RichTextEditor({ initialHtml, onChange }) {
   }, [onChange]);
 
   useEffect(() => {
-    ensureCss();
-  }, []);
+    applyCss(theme);
+  }, [theme]);
 
   const editor = useEditor(
     {
@@ -160,37 +164,22 @@ export default function RichTextEditor({ initialHtml, onChange }) {
         contentContainerStyle={styles.toolbar}
         keyboardShouldPersistTaps="handled"
       >
-        <TB label="↺" onPress={() => editor.chain().focus().undo().run()} active={false} />
-        <TB label="↻" onPress={() => editor.chain().focus().redo().run()} active={false} />
+        <TB styles={styles} label="↺" onPress={() => editor.chain().focus().undo().run()} active={false} />
+        <TB styles={styles} label="↻" onPress={() => editor.chain().focus().redo().run()} active={false} />
 
         <View style={styles.sep} />
 
-        <TB
-          label="B"
-          onPress={() => editor.chain().focus().toggleBold().run()}
-          active={editor.isActive('bold')}
-        />
-        <TB
-          label="I"
-          onPress={() => editor.chain().focus().toggleItalic().run()}
-          active={editor.isActive('italic')}
-        />
-        <TB
-          label="U"
-          onPress={() => editor.chain().focus().toggleUnderline().run()}
-          active={editor.isActive('underline')}
-        />
-        <TB
-          label="S"
-          onPress={() => editor.chain().focus().toggleStrike().run()}
-          active={editor.isActive('strike')}
-        />
+        <TB styles={styles} label="B" onPress={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} />
+        <TB styles={styles} label="I" onPress={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} />
+        <TB styles={styles} label="U" onPress={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} />
+        <TB styles={styles} label="S" onPress={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} />
 
         <View style={styles.sep} />
 
         {FONT_SIZES.map((f) => (
           <TB
             key={f.size}
+            styles={styles}
             label={f.label}
             onPress={() => editor.chain().focus().setFontSize(f.size).run()}
             active={editor.isActive('textStyle', { fontSize: f.size })}
@@ -203,6 +192,7 @@ export default function RichTextEditor({ initialHtml, onChange }) {
           {TEXT_COLORS.map((c) => (
             <Swatch
               key={c}
+              styles={styles}
               color={c}
               isText
               active={editor.isActive('textStyle', { color: c })}
@@ -217,6 +207,7 @@ export default function RichTextEditor({ initialHtml, onChange }) {
           {HIGHLIGHT_COLORS.map((c) => (
             <Swatch
               key={c}
+              styles={styles}
               color={c}
               active={editor.isActive('highlight', { color: c })}
               onPress={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
@@ -226,39 +217,14 @@ export default function RichTextEditor({ initialHtml, onChange }) {
 
         <View style={styles.sep} />
 
-        <TB
-          label="• Lista"
-          onPress={() => editor.chain().focus().toggleBulletList().run()}
-          active={editor.isActive('bulletList')}
-          wide
-        />
-        <TB
-          label="1. Lista"
-          onPress={() => editor.chain().focus().toggleOrderedList().run()}
-          active={editor.isActive('orderedList')}
-          wide
-        />
-        <TB
-          label="Cita"
-          onPress={() => editor.chain().focus().toggleBlockquote().run()}
-          active={editor.isActive('blockquote')}
-          wide
-        />
-        <TB
-          label="Código"
-          onPress={() => editor.chain().focus().toggleCodeBlock().run()}
-          active={editor.isActive('codeBlock')}
-          wide
-        />
+        <TB styles={styles} label="• Lista" onPress={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} wide />
+        <TB styles={styles} label="1. Lista" onPress={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} wide />
+        <TB styles={styles} label="Cita" onPress={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} wide />
+        <TB styles={styles} label="Código" onPress={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} wide />
 
         <View style={styles.sep} />
 
-        <TB
-          label="Limpiar"
-          onPress={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-          active={false}
-          wide
-        />
+        <TB styles={styles} label="Limpiar" onPress={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} active={false} wide />
       </ScrollView>
 
       <View style={styles.shell}>
@@ -268,53 +234,54 @@ export default function RichTextEditor({ initialHtml, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: 8 },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-  },
-  tb: {
-    minWidth: 34,
-    height: 34,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  tbWide: { minWidth: 'auto' },
-  tbActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  tbText: { fontSize: 14, fontWeight: '700', color: colors.ink },
-  tbTextActive: { color: colors.accent },
-  sep: { width: 1, height: 22, backgroundColor: colors.line, marginHorizontal: 2 },
-  swatchRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  swatch: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchText: { width: 22, height: 22, borderRadius: 11 },
-  swatchActive: { borderWidth: 2, borderColor: colors.ink },
-  swatchLetter: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  shell: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 14,
-    backgroundColor: colors.card,
-    overflow: 'hidden',
-  },
-  emptyShell: { minHeight: 220, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: colors.muted, fontSize: 14 },
-});
+const makeStyles = (t) =>
+  StyleSheet.create({
+    root: { gap: 8 },
+    toolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 4,
+    },
+    tb: {
+      minWidth: 34,
+      height: 34,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.line,
+    },
+    tbWide: { minWidth: 'auto' },
+    tbActive: {
+      backgroundColor: t.accentSoft,
+      borderColor: t.accent,
+    },
+    tbText: { fontSize: 14, fontWeight: '700', color: t.ink },
+    tbTextActive: { color: t.accent },
+    sep: { width: 1, height: 22, backgroundColor: t.line, marginHorizontal: 2 },
+    swatchRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    swatch: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 1,
+      borderColor: 'rgba(128,128,128,0.35)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    swatchText: { width: 22, height: 22, borderRadius: 11 },
+    swatchActive: { borderWidth: 2, borderColor: t.ink },
+    swatchLetter: { fontSize: 12, fontWeight: '800', color: '#fff' },
+    shell: {
+      borderWidth: 1,
+      borderColor: t.line,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      overflow: 'hidden',
+    },
+    emptyShell: { minHeight: 220, alignItems: 'center', justifyContent: 'center' },
+    emptyText: { color: t.muted, fontSize: 14 },
+  });

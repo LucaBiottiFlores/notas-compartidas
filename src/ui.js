@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,24 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { colors, radius, radiusSm } from './theme';
+import { useTheme, radius, radiusSm } from './theme';
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}
+
+// Sombra suave "soft UI": una sola sombra tenue y teñida (cross-platform).
+const softShadow = (t) => ({
+  shadowColor: t.shadowDark,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 1,
+  shadowRadius: 10,
+  elevation: 2,
+});
 
 export function Screen({ children, scroll = true, style }) {
+  const styles = useStyles();
   if (!scroll) {
     return <View style={[styles.screen, style]}>{children}</View>;
   }
@@ -29,6 +44,7 @@ export function Screen({ children, scroll = true, style }) {
 }
 
 export function Header({ title, subtitle, onBack, right }) {
+  const styles = useStyles();
   return (
     <View style={styles.header}>
       {onBack ? (
@@ -52,16 +68,23 @@ export function Header({ title, subtitle, onBack, right }) {
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled, small, style, icon }) {
+  const { theme } = useTheme();
+  const styles = useStyles();
   const bg =
     variant === 'primary'
-      ? colors.accent
+      ? theme.accent
       : variant === 'danger'
-      ? colors.danger
+      ? theme.danger
       : variant === 'ghost'
-      ? colors.card
+      ? theme.card
       : 'transparent';
-  const border = variant === 'ghost' ? colors.line : 'transparent';
-  const fg = variant === 'primary' || variant === 'danger' ? '#fff' : colors.ink;
+  const border = variant === 'ghost' ? theme.line : 'transparent';
+  const fg =
+    variant === 'primary'
+      ? theme.accentInk
+      : variant === 'danger'
+      ? theme.dangerInk
+      : theme.ink;
   return (
     <Pressable
       onPress={onPress}
@@ -69,6 +92,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, small, s
       style={({ pressed }) => [
         styles.btn,
         { backgroundColor: bg, borderColor: border, borderWidth: variant === 'ghost' ? 1 : 0 },
+        variant !== 'ghost' && softShadow(theme),
         small && styles.btnSmall,
         disabled && styles.btnDisabled,
         pressed && !disabled && styles.pressed,
@@ -82,6 +106,8 @@ export function Button({ title, onPress, variant = 'primary', disabled, small, s
 }
 
 export function Field({ label, value, onChangeText, placeholder, multiline, keyboardType, autoCapitalize, autoFocus, style }) {
+  const { theme } = useTheme();
+  const styles = useStyles();
   return (
     <View style={[styles.fieldWrap, style]}>
       {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
@@ -89,7 +115,7 @@ export function Field({ label, value, onChangeText, placeholder, multiline, keyb
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={theme.muted}
         multiline={multiline}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize || 'sentences'}
@@ -101,6 +127,7 @@ export function Field({ label, value, onChangeText, placeholder, multiline, keyb
 }
 
 export function Card({ children, onPress, style, right }) {
+  const styles = useStyles();
   const content = (
     <View style={[styles.card, style]}>
       <View style={styles.cardMain}>{children}</View>
@@ -118,6 +145,7 @@ export function Card({ children, onPress, style, right }) {
 }
 
 export function EmptyState({ title, subtitle, emoji }) {
+  const styles = useStyles();
   return (
     <View style={styles.empty}>
       {emoji ? <Text style={styles.emptyEmoji}>{emoji}</Text> : null}
@@ -128,19 +156,23 @@ export function EmptyState({ title, subtitle, emoji }) {
 }
 
 export function Spinner({ label }) {
+  const { theme } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.spinnerWrap}>
-      <ActivityIndicator color={colors.accent} size="large" />
+      <ActivityIndicator color={theme.accent} size="large" />
       {label ? <Text style={styles.spinnerLabel}>{label}</Text> : null}
     </View>
   );
 }
 
 export function Badge({ children, tone = 'neutral', style }) {
+  const { theme } = useTheme();
+  const styles = useStyles();
   const bg =
-    tone === 'accent' ? colors.accentSoft : tone === 'danger' ? colors.dangerSoft : tone === 'warn' ? colors.warnSoft : colors.line;
+    tone === 'accent' ? theme.accentSoft : tone === 'danger' ? theme.dangerSoft : tone === 'warn' ? theme.warnSoft : theme.line;
   const fg =
-    tone === 'accent' ? colors.accent : tone === 'danger' ? colors.danger : tone === 'warn' ? colors.warn : colors.muted;
+    tone === 'accent' ? theme.accent : tone === 'danger' ? theme.danger : tone === 'warn' ? theme.warn : theme.muted;
   return (
     <View style={[styles.badge, { backgroundColor: bg }, style]}>
       <Text style={[styles.badgeText, { color: fg }]}>{children}</Text>
@@ -149,6 +181,7 @@ export function Badge({ children, tone = 'neutral', style }) {
 }
 
 export function Sheet({ visible, onClose, children, title }) {
+  const styles = useStyles();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -161,47 +194,48 @@ export function Sheet({ visible, onClose, children, title }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8, flexGrow: 1 },
-  screenScroll: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (t) =>
+  StyleSheet.create({
+    screen: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8, flexGrow: 1 },
+    screenScroll: { flex: 1, backgroundColor: t.bg },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line },
-  backText: { fontSize: 26, lineHeight: 28, color: colors.ink, marginTop: -2 },
-  headerBody: { flex: 1, minWidth: 0 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  headerSubtitle: { fontSize: 13, color: colors.muted, marginTop: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 10 },
+    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: t.line },
+    backText: { fontSize: 26, lineHeight: 28, color: t.ink, marginTop: -2 },
+    headerBody: { flex: 1, minWidth: 0 },
+    headerTitle: { fontSize: 20, fontWeight: '800', color: t.ink, letterSpacing: -0.3 },
+    headerSubtitle: { fontSize: 13, color: t.muted, marginTop: 1 },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 14, minHeight: 50 },
-  btnSmall: { paddingVertical: 9, paddingHorizontal: 14, minHeight: 38, borderRadius: 11 },
-  btnText: { fontSize: 16, fontWeight: '700' },
-  btnTextSmall: { fontSize: 14 },
-  btnDisabled: { opacity: 0.45 },
-  pressed: { opacity: 0.8 },
+    btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 16, minHeight: 50 },
+    btnSmall: { paddingVertical: 9, paddingHorizontal: 14, minHeight: 40, borderRadius: 12 },
+    btnText: { fontSize: 16, fontWeight: '700' },
+    btnTextSmall: { fontSize: 14 },
+    btnDisabled: { opacity: 0.45 },
+    pressed: { opacity: 0.85 },
 
-  fieldWrap: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 6 },
-  field: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: radiusSm, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: colors.ink },
-  fieldMultiline: { minHeight: 220, textAlignVertical: 'top', paddingTop: 14 },
+    fieldWrap: { marginBottom: 14 },
+    fieldLabel: { fontSize: 13, fontWeight: '700', color: t.muted, marginBottom: 6 },
+    field: { backgroundColor: t.card, borderWidth: 1, borderColor: t.line, borderRadius: radiusSm, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: t.ink },
+    fieldMultiline: { minHeight: 220, textAlignVertical: 'top', paddingTop: 14 },
 
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: radius, padding: 16, marginBottom: 10 },
-  cardMain: { flex: 1, minWidth: 0 },
-  cardRight: { marginLeft: 10 },
+    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderWidth: 1, borderColor: t.line, borderRadius: radius, padding: 18, marginBottom: 12, ...softShadow(t) },
+    cardMain: { flex: 1, minWidth: 0 },
+    cardRight: { marginLeft: 10 },
 
-  empty: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 },
-  emptyEmoji: { fontSize: 40, marginBottom: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, textAlign: 'center' },
-  emptySubtitle: { fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+    empty: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 },
+    emptyEmoji: { fontSize: 40, marginBottom: 10 },
+    emptyTitle: { fontSize: 16, fontWeight: '700', color: t.ink, textAlign: 'center' },
+    emptySubtitle: { fontSize: 14, color: t.muted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
 
-  spinnerWrap: { alignItems: 'center', paddingVertical: 40 },
-  spinnerLabel: { color: colors.muted, marginTop: 12, fontSize: 14 },
+    spinnerWrap: { alignItems: 'center', paddingVertical: 40 },
+    spinnerLabel: { color: t.muted, marginTop: 12, fontSize: 14 },
 
-  badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, alignSelf: 'flex-start' },
-  badgeText: { fontSize: 12, fontWeight: '700' },
+    badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start' },
+    badgeText: { fontSize: 12, fontWeight: '700' },
 
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 22, paddingBottom: 36, ...(Platform.OS === 'web' ? { maxWidth: 520, alignSelf: 'center', width: '100%', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, marginBottom: 24 } : {}) },
-  sheetHandle: { width: 40, height: 5, borderRadius: 3, backgroundColor: colors.line, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.ink, marginBottom: 14 },
-});
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+    sheet: { backgroundColor: t.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingBottom: 36, ...(Platform.OS === 'web' ? { maxWidth: 520, alignSelf: 'center', width: '100%', borderBottomLeftRadius: 28, borderBottomRightRadius: 28, marginBottom: 24 } : {}) },
+    sheetHandle: { width: 40, height: 5, borderRadius: 3, backgroundColor: t.line, alignSelf: 'center', marginBottom: 16 },
+    sheetTitle: { fontSize: 18, fontWeight: '800', color: t.ink, marginBottom: 14 },
+  });
