@@ -1,65 +1,17 @@
 import React, { useEffect, useRef, useReducer } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-style';
-import Highlight from '@tiptap/extension-highlight';
-import Placeholder from '@tiptap/extension-placeholder';
+import { StarterKit } from '@tiptap/starter-kit';
+import { TextStyle, Color, FontSize } from '@tiptap/extension-text-style';
+import { Highlight } from '@tiptap/extension-highlight';
+import { Placeholder } from '@tiptap/extension-placeholder';
 import { colors } from './theme';
-
-// Mark `textStyle` extendido: soporta color y tamaño de letra en un mismo mark,
-// para no chocar con la extensión `Color` de TipTap.
-const TextStyleExt = TextStyle.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      color: {
-        default: null,
-        parseHTML: (element) => element.style.color || null,
-        renderHTML: (attributes) => {
-          if (!attributes.color) return {};
-          return { style: `color: ${attributes.color}` };
-        },
-      },
-      fontSize: {
-        default: null,
-        parseHTML: (element) => element.style.fontSize || null,
-        renderHTML: (attributes) => {
-          if (!attributes.fontSize) return {};
-          return { style: `font-size: ${attributes.fontSize}` };
-        },
-      },
-    };
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    const { color, fontSize, ...rest } = HTMLAttributes;
-    const styles = [];
-    if (color) styles.push(`color: ${color}`);
-    if (fontSize) styles.push(`font-size: ${fontSize}`);
-    const base = { ...(this.options.HTMLAttributes || {}) };
-    delete base.style;
-    const merged = { ...base, ...rest };
-    if (styles.length) merged.style = styles.join('; ');
-    return ['span', merged, 0];
-  },
-
-  addCommands() {
-    return {
-      ...this.parent?.(),
-      setColor: (color) => ({ chain }) => chain().setMark('textStyle', { color }).run(),
-      unsetColor: () => ({ chain }) => chain().setMark('textStyle', { color: null }).run(),
-      setFontSize: (fontSize) => ({ chain }) => chain().setMark('textStyle', { fontSize }).run(),
-      unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).run(),
-    };
-  },
-});
 
 const EXTENSIONS = [
   StarterKit,
-  Underline,
-  TextStyleExt,
+  TextStyle,
+  Color,
+  FontSize,
   Highlight.configure({ multicolor: true }),
   Placeholder.configure({ placeholder: 'Escribe lo que necesites…' }),
 ];
