@@ -29,5 +29,8 @@
     "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "^0.21.2"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "eas-cli": "^26.0.0"
+  }
 }

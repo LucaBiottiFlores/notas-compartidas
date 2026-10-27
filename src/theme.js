@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Tokens CSS de la guía → tokens internos de la app.
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'notas.theme.v1';
+const STORAGE_KEY = 'notas.theme.v2';
 
 function hexToRgb(hex) {
   let h = (hex || '').replace('#', '');
@@ -205,7 +205,7 @@ export const THEMES = Object.fromEntries(
 );
 
 export const THEME_KEYS = Object.keys(THEMES);
-export const DEFAULT_THEME = 'mint-paper';
+export const DEFAULT_THEME = 'burdeos';
 
 // Radios y tipografía (no dependen del tema).
 export const radius = 22;
