@@ -212,6 +212,56 @@ function installWebBase() {
       "html, body, #root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }";
     document.head.appendChild(style);
   }
+  if (!document.getElementById('notes-interaction-css')) {
+    const style = document.createElement('style');
+    style.id = 'notes-interaction-css';
+    style.textContent = `
+      :root { --focus-ring: #52d7ae; }
+
+      /* Foco visible (WCAG): anillo exterior de 3px, sin depender solo del color. */
+      input:focus, textarea:focus, button:focus, a:focus, [tabindex]:focus {
+        outline: none;
+      }
+      input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible,
+      [tabindex="0"]:focus-visible, [role="button"]:focus-visible {
+        outline: 3px solid var(--focus-ring);
+        outline-offset: 3px;
+      }
+
+      /* Movimiento estándar de la guía: 160ms cubic-bezier(.2,.8,.2,1). */
+      #root, #root * {
+        transition-property: background-color, color, border-color, box-shadow, transform, opacity;
+        transition-duration: 160ms;
+        transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      /* Elevación sutil al hover (máximo -1px) y vuelta al presionar. */
+      [tabindex="0"]:hover:not([aria-disabled="true"]),
+      [role="button"]:hover:not([aria-disabled="true"]) {
+        transform: translateY(-1px);
+      }
+      [tabindex="0"]:active:not([aria-disabled="true"]),
+      [role="button"]:active:not([aria-disabled="true"]) {
+        transform: translateY(0);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// Actualiza variables CSS del tema (ej. --focus-ring) al cambiar de paleta.
+export function applyThemeCss(theme) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--focus-ring', theme.focusRing);
 }
 
 export function ThemeProvider({ children }) {
@@ -221,6 +271,10 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     installWebBase();
   }, []);
+
+  useEffect(() => {
+    applyThemeCss(THEMES[themeKey]);
+  }, [themeKey]);
 
   useEffect(() => {
     let mounted = true;
