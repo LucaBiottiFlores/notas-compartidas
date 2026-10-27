@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { listNotes, listMembers, subscribeToGroupNotes } from '../supabase';
 import { colors } from '../theme';
 import { Button, Card, EmptyState, Header, Sheet, Spinner, Badge } from '../ui';
+import { htmlToText } from '../utils';
 
 function timeAgo(iso) {
   if (!iso) return '';
@@ -22,7 +23,7 @@ function timeAgo(iso) {
 }
 
 function snippet(body, n = 90) {
-  const s = (body || '').replace(/\s+/g, ' ').trim();
+  const s = htmlToText(body).replace(/\s+/g, ' ').trim();
   return s.length > n ? s.slice(0, n) + '…' : s;
 }
 

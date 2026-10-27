@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import {
   createNote,
   updateNote,
@@ -10,6 +10,8 @@ import {
 } from '../supabase';
 import { colors } from '../theme';
 import { Button, Field, Header, Sheet } from '../ui';
+import RichTextEditor from '../RichTextEditor';
+import { htmlToText } from '../utils';
 
 function fmt(iso) {
   if (!iso) return '';
@@ -152,13 +154,20 @@ export default function NoteEditorScreen({ group, note, onBack, onSaved }) {
           onChangeText={onTitle}
           placeholder="Título de la nota"
         />
-        <Field
-          label="Contenido"
-          value={body}
-          onChangeText={onBody}
-          placeholder="Escribe lo que necesites recordar o compartir…"
-          multiline
-        />
+        {Platform.OS === 'web' ? (
+          <View style={styles.editorWrap}>
+            <Text style={styles.editorLabel}>Contenido</Text>
+            <RichTextEditor initialHtml={body} onChange={onBody} />
+          </View>
+        ) : (
+          <Field
+            label="Contenido"
+            value={body}
+            onChangeText={onBody}
+            placeholder="Escribe lo que necesites recordar o compartir…"
+            multiline
+          />
+        )}
 
         {isNew ? (
           <Button
@@ -191,7 +200,7 @@ export default function NoteEditorScreen({ group, note, onBack, onSaved }) {
             {(history || []).map((v) => (
               <View key={v.id} style={styles.versionRow}>
                 <Text style={styles.versionTitle} numberOfLines={1}>{v.title || 'Nota sin título'}</Text>
-                <Text style={styles.versionBody} numberOfLines={3}>{v.body || ''}</Text>
+                <Text style={styles.versionBody} numberOfLines={3}>{htmlToText(v.body)}</Text>
                 <Text style={styles.versionTime}>{fmt(v.created_at)}</Text>
               </View>
             ))}
@@ -216,4 +225,6 @@ const styles = StyleSheet.create({
   versionTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
   versionBody: { fontSize: 14, color: colors.muted, marginTop: 2, lineHeight: 19 },
   versionTime: { fontSize: 12, color: colors.muted, marginTop: 6 },
+  editorWrap: { marginBottom: 14 },
+  editorLabel: { fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 6 },
 });
