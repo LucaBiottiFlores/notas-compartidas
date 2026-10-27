@@ -17,14 +17,30 @@ function useStyles() {
   return useMemo(() => makeStyles(theme), [theme]);
 }
 
-// Sombra suave "soft UI": una sola sombra tenue y teñida (cross-platform).
-const softShadow = (t) => ({
-  shadowColor: t.shadowDark,
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 1,
-  shadowRadius: 10,
-  elevation: 2,
-});
+// Sombra "soft UI" de doble fuente: oscura abajo/derecha + luz arriba/izquierda.
+// En web usa la sombra doble exacta de la guía; en nativo cae a una sombra suave.
+const shadowCss = (dark, light, level) => {
+  const d = level === 1 ? '4px 4px 10px' : level === 2 ? '8px 8px 18px' : '14px 16px 32px';
+  const l = level === 1 ? '-4px -4px 10px' : level === 2 ? '-7px -7px 18px' : '-10px -10px 26px';
+  return `${d} ${dark}, ${l} ${light}`;
+};
+
+const softShadow = (t, level = 1) =>
+  Platform.OS === 'web'
+    ? { boxShadow: shadowCss(t.shadowDark, t.shadowLight, level) }
+    : {
+        shadowColor: t.shadowDark,
+        shadowOffset: { width: 0, height: level },
+        shadowOpacity: 1,
+        shadowRadius: level * 6,
+        elevation: level,
+      };
+
+// Relieve interior al presionar (estado activo de la guía).
+const pressedShadow = (t) =>
+  Platform.OS === 'web'
+    ? { boxShadow: `inset 3px 3px 8px ${t.shadowDark}, inset -3px -3px 8px ${t.shadowLight}` }
+    : { opacity: 0.85 };
 
 export function Screen({ children, scroll = true, style }) {
   const styles = useStyles();
@@ -92,7 +108,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, small, s
       style={({ pressed }) => [
         styles.btn,
         { backgroundColor: bg, borderColor: border, borderWidth: variant === 'ghost' ? 1 : 0 },
-        variant !== 'ghost' && softShadow(theme),
+        variant !== 'ghost' && softShadow(theme, 1),
         small && styles.btnSmall,
         disabled && styles.btnDisabled,
         pressed && !disabled && styles.pressed,
@@ -212,14 +228,14 @@ const makeStyles = (t) =>
     btnText: { fontSize: 16, fontWeight: '700' },
     btnTextSmall: { fontSize: 14 },
     btnDisabled: { opacity: 0.45 },
-    pressed: { opacity: 0.85 },
+    pressed: pressedShadow(t),
 
     fieldWrap: { marginBottom: 14 },
     fieldLabel: { fontSize: 13, fontWeight: '700', color: t.muted, marginBottom: 6 },
     field: { backgroundColor: t.card, borderWidth: 1, borderColor: t.line, borderRadius: radiusSm, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: t.ink },
     fieldMultiline: { minHeight: 220, textAlignVertical: 'top', paddingTop: 14 },
 
-    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderWidth: 1, borderColor: t.line, borderRadius: radius, padding: 18, marginBottom: 12, ...softShadow(t) },
+    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderWidth: 1, borderColor: t.line, borderRadius: radius, padding: 18, marginBottom: 12, ...softShadow(t, 2) },
     cardMain: { flex: 1, minWidth: 0 },
     cardRight: { marginLeft: 10 },
 

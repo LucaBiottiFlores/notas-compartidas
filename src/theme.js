@@ -195,9 +195,32 @@ export const font = {
 
 const ThemeContext = createContext(null);
 
+// Tipografía de la guía: Inter (con fallback a sistema). Solo aplica en web.
+function installWebBase() {
+  if (typeof document === 'undefined') return;
+  if (!document.getElementById('notes-font-link')) {
+    const link = document.createElement('link');
+    link.id = 'notes-font-link';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
+  }
+  if (!document.getElementById('notes-base-css')) {
+    const style = document.createElement('style');
+    style.id = 'notes-base-css';
+    style.textContent =
+      "html, body, #root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }";
+    document.head.appendChild(style);
+  }
+}
+
 export function ThemeProvider({ children }) {
   const [themeKey, setThemeKeyState] = useState(DEFAULT_THEME);
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    installWebBase();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
