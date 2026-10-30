@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { listNotes, listMembers, subscribeToGroupNotes } from '../supabase';
+import { listNotes, listMembers, subscribeToGroupNotes, deleteGroup, currentUserId } from '../supabase';
 import { useTheme } from '../theme';
 import { Button, Card, EmptyState, Header, Sheet, Spinner, Badge } from '../ui';
 import { htmlToText } from '../utils';
@@ -33,6 +33,9 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
   const [notes, setNotes] = useState(null);
   const [members, setMembers] = useState([]);
   const [showMembers, setShowMembers] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -58,6 +61,17 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
     };
   }, [refresh, group.id]);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const uid = await currentUserId();
+      if (mounted) setIsOwner(uid === group.owner_id);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [group.owner_id]);
+
   function notify(msg) {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
@@ -70,6 +84,19 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
       }
     } catch (e) {}
     notify('Código ' + group.invite_code + ' listo para compartir');
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await deleteGroup(group.id);
+      setConfirmDelete(false);
+      onBack();
+    } catch (e) {
+      setDeleting(false);
+      setConfirmDelete(false);
+      notify(e.message || 'No se pudo borrar el grupo');
+    }
   }
 
   const active = notes || [];
@@ -135,6 +162,34 @@ export default function GroupScreen({ group, onBack, onOpenNote, onOpenTrash, on
           })}
         </View>
         <Button title="Copiar código de invitación" onPress={copyCode} />
+        {isOwner ? (
+          <Button
+            title="Borrar grupo"
+            variant="danger"
+            style={styles.deleteBtn}
+            onPress={() => setConfirmDelete(true)}
+          />
+        ) : null}
+      </Sheet>
+
+      {/* Confirmación de borrado */}
+      <Sheet visible={confirmDelete} onClose={() => setConfirmDelete(false)} title="¿Borrar este grupo?">
+        <Text style={styles.confirmText}>
+          Se borrará el grupo «{group.name}» junto con todas sus notas y el historial. Esta acción no se puede deshacer.
+        </Text>
+        <Button
+          title={deleting ? 'Borrando…' : 'Sí, borrar grupo'}
+          variant="danger"
+          onPress={handleDelete}
+          disabled={deleting}
+        />
+        <Button
+          title="Cancelar"
+          variant="ghost"
+          style={styles.cancelBtn}
+          onPress={() => setConfirmDelete(false)}
+          disabled={deleting}
+        />
       </Sheet>
 
       {toast ? (
@@ -163,6 +218,9 @@ const makeStyles = (t) =>
     memberInfo: { flex: 1, minWidth: 0 },
     memberName: { fontSize: 15, fontWeight: '700', color: t.ink },
     memberEmail: { fontSize: 13, color: t.muted },
+    deleteBtn: { marginTop: 12 },
+    confirmText: { fontSize: 14, color: t.muted, lineHeight: 20, marginBottom: 16 },
+    cancelBtn: { marginTop: 10 },
     toast: { position: 'absolute', left: 24, right: 24, bottom: 28, backgroundColor: t.ink, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center' },
     toastText: { color: t.bg, fontSize: 14, fontWeight: '600' },
   });

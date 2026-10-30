@@ -156,6 +156,35 @@ export async function leaveGroup(groupId) {
     .eq('user_id', id);
 }
 
+export async function deleteGroup(groupId) {
+  const id = await currentUserId();
+  if (!id) throw new Error('Sin sesión');
+
+  // Solo el dueño puede borrar el grupo completo.
+  const { data: g } = await supabase
+    .from('groups')
+    .select('owner_id')
+    .eq('id', groupId)
+    .maybeSingle();
+  if (!g) throw new Error('Grupo no encontrado');
+  if (g.owner_id !== id) throw new Error('Solo el dueño puede borrar el grupo');
+
+  // Borrar versiones de notas, luego notas, miembros y por último el grupo.
+  const { data: notes } = await supabase
+    .from('notes')
+    .select('id')
+    .eq('group_id', groupId);
+  const noteIds = (notes || []).map((n) => n.id);
+  if (noteIds.length) {
+    await supabase.from('note_versions').delete().in('note_id', noteIds);
+    await supabase.from('notes').delete().eq('group_id', groupId);
+  }
+  await supabase.from('group_members').delete().eq('group_id', groupId);
+  const { error } = await supabase.from('groups').delete().eq('id', groupId);
+  if (error) throw error;
+  return true;
+}
+
 // ---- Notas ----
 export async function listNotes(groupId, includeDeleted = false) {
   const { data, error } = await supabase
