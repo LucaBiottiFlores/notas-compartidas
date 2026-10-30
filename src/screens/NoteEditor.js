@@ -11,6 +11,7 @@ import {
 import { useTheme } from '../theme';
 import { Button, Field, Header, Sheet } from '../ui';
 import RichTextEditor from '../RichTextEditor';
+import NativeRichTextEditor from '../NativeRichTextEditor';
 import { htmlToText } from '../utils';
 
 function fmt(iso) {
@@ -162,13 +163,10 @@ export default function NoteEditorScreen({ group, note, onBack, onSaved }) {
             <RichTextEditor initialHtml={body} onChange={onBody} />
           </View>
         ) : (
-          <Field
-            label="Contenido"
-            value={body}
-            onChangeText={onBody}
-            placeholder="Escribe lo que necesites recordar o compartir…"
-            multiline
-          />
+          <View style={styles.editorWrap}>
+            <Text style={styles.editorLabel}>Contenido</Text>
+            <NativeRichTextEditor initialHtml={body} onChange={onBody} />
+          </View>
         )}
 
         {isNew ? (
